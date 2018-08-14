@@ -1,11 +1,11 @@
 .vagrant/
-network.retry
-node0.vdi
+*.retry
+*.vdi
 node0/
-node1.vdi
 node1/
-node2.vdi
 node2/
-node3.vdi
 node3/
+bootstrap_*.sh
+conf.yml
+README_*.md
 

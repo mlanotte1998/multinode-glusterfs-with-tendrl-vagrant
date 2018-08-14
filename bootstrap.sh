@@ -1,49 +1,57 @@
 #!/bin/bash -ux
 
-### install pre-requisites
-sudo yum install git -y
-sudo yum install wget -y
-sudo yum install python-dns -y
+# subscription-manager credentials
+subscription-manager register --username $2 --password $3 --auto-attach
+subscription-manager repos --disable=rhel-7-server-htb-rpms
+
+# install pre-requisites
+sudo yum install nano -y
 sudo yum install ntpdate -y
-sudo ntpdate <your_NTP_server>
+sudo ntpdate $1
 
-### install ansible
-sudo yum install epel-release -y
-sudo yum install ansible -y
-
-### configure disk
-# fdisk /dev/sdb
-# mkfs.xfs /dev/sdb1
-# parted /dev/sdb print
-
-### specify where bricks to be mounted
+# prep for mounting later
 mkdir /bricks
 mkdir /bricks/brick1
-echo "#/dev/sdb1 	/bricks/brick1				xfs defaults 0 0" >> /etc/fstab
-# mount /bricks/brick1  OR mount -a
+echo "/dev/sdb1     /bricks/brick1              xfs defaults 0 0" >> /etc/fstab
 
-### install some extra utilities on node0 (Tendrl master) and Gluster on Tendrl nodes
 if [ $HOSTNAME == 'node0' ] 
+# Server Node
 then
-  yum install epel-release yum-plugin-copr -y
-  yum copr enable tendrl/release -y
-  # clone tendrl-ansible
-  #cd /opt
-  #git clone https://github.com/Tendrl/tendrl-ansible.git
-  yum install tendrl-ansible -y
+    cd /etc/yum.repos.d
+
+    # enable repos specified by RHGS Quick Start Guide
+    subscription-manager repos --enable=rhel-7-server-rpms
+    subscription-manager repos --enable=rh-gluster-3-web-admin-server-for-rhel-7-server-rpms
+
+    # remove epel.repo and epel-testing.repo
+    rm -f epel.repo
+    rm -f epel-testing.repo
+    yum clean all
+
+    # install tendrl-ansible
+    yum -y install ansible tendrl-ansible
+
+# Storage Nodes
 else
-  # install gluster 3.12.1 and gstatus on storage nodes
-  sudo yum install centos-release-gluster -y
-  sudo yum install glusterfs-server -y
+    cd /etc/yum.repos.d
 
-  sudo systemctl enable glusterd
-  sudo systemctl start glusterd
-  sudo systemctl status glusterd
+    # enable repos specified by RHGS Quick Start Guide
+    subscription-manager repos --enable=rhel-7-server-rpms --enable=rh-gluster-3-for-rhel-7-server-rpms
+    subscription-manager repos --enable=rh-gluster-3-web-admin-agent-for-rhel-7-server-rpms
 
-  cd /opt
-  git clone https://github.com/gluster/gstatus
-  cd /opt/gstatus
-  python setup.py install
+    # remove epel.repo and epel-testing.repo
+    rm -f epel.repo
+    rm -f epel-testing.repo
+    yum clean all
+
+    # gluster install
+    yum install redhat-storage-server -y
+
+    # start gluster service
+    sudo systemctl enable glusterd
+    sudo systemctl start glusterd
+    sudo systemctl status glusterd
+
 fi
 
 service firewalld stop
@@ -51,4 +59,3 @@ systemctl disable firewalld
 iptables --flush
 
 # done
-

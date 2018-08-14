@@ -1,0 +1,4 @@
+bootstrap: bootstrap.sh
+ntp_server: 
+rhel_username: 
+rhel_password: 

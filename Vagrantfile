@@ -1,11 +1,16 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
-#
-# Source: https://github.com/julienlim/multinode-glusterfs-with-tendrl-vagrant
-#
+
+require 'yaml'
+
+conf = YAML.load_file 'conf.yml'
+bootstrap = conf['bootstrap']
+ntp = conf['ntp_server']
+username = conf['rhel_username']
+password = conf['rhel_password']
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "centos/7"
+  config.vm.box = "generic/rhel7"
   config.ssh.forward_x11 = true
   config.ssh.insert_key = false
 
@@ -14,29 +19,29 @@ Vagrant.configure(2) do |config|
     vb.cpus = 2
     vb.memory = 2048
   end
+ 
+  config.vm.provision :shell, :path => bootstrap, :args => [ntp, username, password]
 
-  config.vm.provision "shell", path: "bootstrap.sh"
-
-  # Provision 4 VMs (node0..node3)
-  (0..3).each do |i|
-    config.vm.define "node#{i}" do |hostconfig|
-      hostconfig.vm.hostname = "node#{i}"
-      hostconfig.vm.network "private_network", type: "dhcp"
-      hostconfig.vm.provider "virtualbox" do |vb|
-        unless File.exist?("node#{i}.vdi")
-          vb.customize ['createhd', '--filename', "node#{i}", '--size', 1 * 1024]
+  (0..3).each do |node_index|
+    config.vm.define "node#{node_index}" do |machine|
+      machine.vm.hostname = "node#{node_index}"
+      machine.vm.network "private_network", type: "dhcp"
+      machine.vm.provider "virtualbox" do |vb|
+        unless File.exist?("node#{node_index}.vdi")
+          vb.customize ['createhd', '--filename', "node#{node_index}", '--size', 1 * 1024]
         end
-        vb.customize ['storageattach', :id, '--storagectl', "IDE", '--port', "1", '--device', "1", '--type', 'hdd', '--medium', "node#{i}.vdi"]
-        vb.name = "node#{i}"
+        vb.customize ['storageattach', :id, '--storagectl', "IDE Controller", '--port', "1", '--device', "1", '--type', 'hdd', '--medium', "node#{node_index}.vdi"]
+        vb.name = "node#{node_index}"
       end
 
-      if i == 3
-        hostconfig.vm.provision :ansible do |ansible|
+      if node_index == 3
+        
+        machine.vm.provision :ansible do |ansible|
           ansible.limit = 'all'
           ansible.playbook = "network.yml"
         end
 
-        hostconfig.vm.provision :ansible do |ansible|
+        machine.vm.provision :ansible do |ansible|
           ansible.limit = 'all'
           ansible.groups = {
             'gluster_servers' => ["node[1:3]"],
@@ -44,16 +49,16 @@ Vagrant.configure(2) do |config|
           ansible.playbook = 'filesystem.yml'
         end
 
-        hostconfig.vm.provision :ansible do |ansible|
+        machine.vm.provision :ansible do |ansible|
           ansible.limit = 'all'
           ansible.groups = {
             'node1' => ["node1"],
           }
           ansible.playbook = 'cluster.yml'
         end
+
       end
 
     end
   end
 end
-
