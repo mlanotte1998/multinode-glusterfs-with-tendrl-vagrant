@@ -31,7 +31,7 @@ Setting up the Vagrant Boxes:
 
 4. Clone this repo.
 
-5. Modify Vagrantfile and inventory_file if you want more than 4 nodes (VMs), e.g. node0 will be the Tendrl master, and node1..node3 are the Gluster trusted pool and Tendrl nodes (agents).  Note: a virtual hard drive will be created/allocated on each of the nodes for 1 GB capacity.
+5. Modify Vagrantfile if you want more than 4 nodes (VMs), e.g. node0 will be the Tendrl master, and node1..node3 are the Gluster trusted pool and Tendrl nodes (agents).  Note: a virtual hard drive will be created/allocated on each of the nodes for 1 GB capacity.
 
 6. Create a file called "conf.yml" based off "conf.yml.sample" with the required relevant data, i.e. your RHEL credentials, desired NTP server, and the bootstrap file you wish you use.
 

@@ -1,6 +1,0 @@
-[gluster_servers]
-node1
-node2
-node3
-[tendrl_server]
-node0
