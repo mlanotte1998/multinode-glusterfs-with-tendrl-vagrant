@@ -1,10 +1,7 @@
 .vagrant/
 *.retry
 *.vdi
-node0/
-node1/
-node2/
-node3/
+node*/
 bootstrap_*.sh
 conf.yml
 README_*.md
