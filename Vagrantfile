@@ -6,6 +6,7 @@ require 'yaml'
 conf = YAML.load_file 'conf.yml'
 bootstrap = conf['bootstrap']
 ntp = conf['ntp_server']
+storage_node_count = conf['storage_node_count']
 username = conf['rhel_username']
 password = conf['rhel_password']
 
@@ -22,41 +23,49 @@ Vagrant.configure(2) do |config|
  
   config.vm.provision :shell, :path => bootstrap, :args => [ntp, username, password]
 
-  (0..3).each do |node_index|
-    config.vm.define "node#{node_index}" do |machine|
-      machine.vm.hostname = "node#{node_index}"
-      machine.vm.network "private_network", type: "dhcp"
-      machine.vm.provider "virtualbox" do |vb|
-        unless File.exist?("node#{node_index}.vdi")
-          vb.customize ['createhd', '--filename', "node#{node_index}", '--size', 1 * 1024]
+  (0..storage_node_count).each do |i|
+    config.vm.define "node#{i}" do |hostconfig|
+      hostconfig.vm.hostname = "node#{i}"
+      hostconfig.vm.network "private_network", type: "dhcp"
+      hostconfig.vm.provider "virtualbox" do |vb|
+        unless File.exist?("node#{i}.vdi")
+          vb.customize ['createhd', '--filename', "node#{i}", '--size', 1 * 1024]
         end
-        vb.customize ['storageattach', :id, '--storagectl', "IDE Controller", '--port', "1", '--device', "1", '--type', 'hdd', '--medium', "node#{node_index}.vdi"]
-        vb.name = "node#{node_index}"
+        vb.customize ['storageattach', :id, '--storagectl', "IDE Controller", '--port', "1", '--device', "1", '--type', 'hdd', '--medium', "node#{i}.vdi"]
+        vb.name = "node#{i}"
       end
 
-      if node_index == 3
-        
-        machine.vm.provision :ansible do |ansible|
+      if i == storage_node_count
+        hostconfig.vm.provision :ansible do |ansible|
           ansible.limit = 'all'
           ansible.playbook = "network.yml"
         end
 
-        machine.vm.provision :ansible do |ansible|
+        hostconfig.vm.provision :ansible do |ansible|
           ansible.limit = 'all'
           ansible.groups = {
-            'gluster_servers' => ["node[1:3]"],
+            'gluster_servers' => ["node[1:#{storage_node_count}]"],
           }
           ansible.playbook = 'filesystem.yml'
         end
 
-        machine.vm.provision :ansible do |ansible|
+        volume_string = "gluster volume create vol1 "
+        for j in 1..storage_node_count do
+          volume_string << "node#{j}:/bricks/brick1 "
+        end
+        volume_string << "force"
+
+        hostconfig.vm.provision :ansible do |ansible|
           ansible.limit = 'all'
           ansible.groups = {
             'node1' => ["node1"],
+            'other_storage_nodes' => ["node[2:#{storage_node_count}]"]
+          }
+          ansible.extra_vars = {
+            "volume_string": volume_string
           }
           ansible.playbook = 'cluster.yml'
         end
-
       end
 
     end
