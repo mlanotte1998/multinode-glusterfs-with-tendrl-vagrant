@@ -31,18 +31,16 @@ Setting up the Vagrant Boxes:
 
 4. Clone this repo.
 
-5. Modify Vagrantfile if you want more than 4 nodes (VMs), e.g. node0 will be the Tendrl master, and node1..node3 are the Gluster trusted pool and Tendrl nodes (agents).  Note: a virtual hard drive will be created/allocated on each of the nodes for 1 GB capacity.
+5. Create a file called "conf.yml" based off "conf.yml.sample" with the required relevant data, i.e. your RHEL credentials, desired NTP server, the bootstrap file you wish you use, or if you want more than 4 nodes (VMs), e.g. node0 will be the Tendrl master, and node1..node3 are the Gluster trusted pool and Tendrl nodes (agents). Note: a virtual hard drive will be created/allocated on each of the nodes for 1 GB capacity.
 
-6. Create a file called "conf.yml" based off "conf.yml.sample" with the required relevant data, i.e. your RHEL credentials, desired NTP server, and the bootstrap file you wish you use.
-
-7. Create the vagrant boxes:
+6. Create the vagrant boxes:
 ```bash
 $ vagrant up
 ```
 
-8. If “vagrant up” ran successfully, you would now see node0..node3 running. Ansible should have also taken over and handled the rest of the setup procedure.
+7. If “vagrant up” ran successfully, you would now see node0..node3 running. Ansible should have also taken over and handled the rest of the setup procedure.
 
-9. You’re now ready to deploy Tendrl using tendrl-ansible.
+8. You’re now ready to deploy Tendrl using tendrl-ansible.
 
 ```bash
 $ vagrant ssh node0
@@ -51,7 +49,7 @@ $ cd /usr/share/doc/tendrl-ansible-VERSION
 ```
 Follow the directions found in the README.
 
-10. When you're all done, tell Vagrant to destroy the VMs.
+9. When you're all done, tell Vagrant to destroy the VMs.
 
 ```bash
 ### Cleanup
